@@ -1,0 +1,5 @@
+data_dir: path/to/data
+webscraped_data_file: "webscraped_data.parquet"
+team_scores_file: "team_scores.parquet"
+processed_data_file: "processed_data.parquet"
+model_save_path: "models/"
