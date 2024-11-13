@@ -1,0 +1,20 @@
+# Ignore environment variables for The Odds Api
+The Odds Api/.env
+
+# Ignore the config file in the Prediction folder
+Prediction/config.yaml
+
+# Ignore data files
+*.json
+*.csv
+
+# Ignore Python cache files
+__pycache__/
+*.py[cod]
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Ignore other sensitive or unnecessary files
+*.log
+*.sqlite3
