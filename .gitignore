@@ -18,3 +18,6 @@ __pycache__/
 # Ignore other sensitive or unnecessary files
 *.log
 *.sqlite3
+
+# Ignore DS Store
+.DS_Store
