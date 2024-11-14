@@ -3,6 +3,7 @@ The Odds Api/.env
 
 # Ignore the config file in the Prediction folder
 Prediction/config.yaml
+The Odds Api/config.yaml
 
 # Ignore data files
 *.json
