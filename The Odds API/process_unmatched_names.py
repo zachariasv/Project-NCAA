@@ -12,6 +12,11 @@ def clear_terminal():
 # Get the directory of the current script
 base_directory = os.path.dirname(__file__)
 
+# Load the configuration file to get the path of the prediction dataset
+config_file = base_directory + "/config.json"
+with open(config_file, "r") as f:
+    config = json.load(f)
+
 # Load or create the master file for matched teams
 master_file = "matched_teams_master.csv"
 if os.path.exists(master_file):
@@ -29,7 +34,7 @@ else:
         unmatched_teams = json.load(f)
 
 # Prediction dataset team names in the "TEAMNAME_M" or "TEAMNAME_F" format
-prediction_teams = pd.read_parquet("/Users/zacharias/Dropbox/Python/Project Jupiter/Project Zoccer/ncaa_basketball/project_ncaa_live/ncaa_team_scores_working_file.parquet").columns
+prediction_teams = pd.read_parquet(config["prediction_dataset_path"]).columns
 
 # Function to normalize team names by removing punctuation and converting to lowercase
 def normalize_name(name):
