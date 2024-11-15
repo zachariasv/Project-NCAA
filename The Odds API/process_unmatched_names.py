@@ -5,36 +5,15 @@ import json
 import os
 import platform
 import yaml
+import time
+
+####################
+# Define functions
+####################
 
 # Function to clear the terminal screen
 def clear_terminal():
     os.system("cls" if platform.system() == "Windows" else "clear")
-
-# Get the directory of the current script
-base_directory = os.path.dirname(__file__)
-
-# Load configuration from YAML file
-with open(base_directory +"/config.yaml", "r") as file:
-    config = yaml.safe_load(file)
-
-# Load or create the master file for matched teams
-master_file = "matched_teams_master.csv"
-if os.path.exists(master_file):
-    master_df = pd.read_csv(base_directory + "/" + master_file)
-else:
-    master_df = pd.DataFrame(columns=["original_name", "expected_name", "best_match", "match_score"])
-
-# Load unmatched teams with suggestions, if available, or load unique teams from the source file
-unmatched_file = "unmatched_teams_with_suggestions.json"
-if os.path.exists(base_directory + "/" + unmatched_file):
-    with open(base_directory + "/" + unmatched_file, "r") as f:
-        unmatched_teams = json.load(f)
-else:
-    with open(base_directory + "/" + "ncaa_basketball_teams.json", "r") as f:
-        unmatched_teams = json.load(f)
-
-# Prediction dataset team names in the "TEAMNAME_M" or "TEAMNAME_F" format
-prediction_teams = pd.read_parquet(config["prediction_dataset_path"]).columns
 
 # Function to normalize team names by removing punctuation and converting to lowercase
 def normalize_name(name):
@@ -56,6 +35,47 @@ def save_unmatched_teams():
 # Function to save matched teams to the master file
 def save_master_df():
     master_df.to_csv(base_directory + "/" + master_file, index=False)
+
+####################
+# Code begins
+####################
+
+# Get the directory of the current script
+base_directory = os.path.dirname(__file__)
+
+# Load configuration from YAML file
+with open(base_directory +"/config.yaml", "r") as file:
+    config = yaml.safe_load(file)
+
+# Load or create the master file for matched teams
+master_file = "/matched_teams_master.csv"
+if os.path.exists(base_directory + master_file):
+    master_df = pd.read_csv(base_directory + master_file)
+    print("Successfully loaded already matched teams.")
+else:
+    print("!!! Failed loading already matched teams, starting from scratch... !!!")
+    abort_answer = input("\nDo you wish to abort? (Y/N)")
+    if abort_answer.lower() == "y": quit()
+    elif abort_answer.lower() == "n": master_df = pd.DataFrame(columns=["original_name", "expected_name", "best_match", "match_score"])
+    else:
+        print("Invalid response, aborting...")
+        time.sleep(3)
+        quit()
+
+# Load unmatched teams with suggestions, if available, or load unique teams from the source file
+unmatched_file = "unmatched_teams_with_suggestions.json"
+if os.path.exists(base_directory + unmatched_file):
+    with open(base_directory + unmatched_file, "r") as f:
+        unmatched_teams = json.load(f)
+        print("Successfully loaded unmatched teams.")
+        time.sleep(3)
+else:
+    print("File containing unmatched teams not found! Aborting...")
+    time.sleep(3)
+    quit()
+
+# Prediction dataset team names in the "TEAMNAME_M" or "TEAMNAME_F" format
+prediction_teams = pd.read_parquet(config["prediction_dataset_path"]).columns
 
 # Processing unmatched teams
 try:
