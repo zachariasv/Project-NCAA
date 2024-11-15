@@ -4,6 +4,7 @@ from fuzzywuzzy import fuzz, process
 import json
 import os
 import platform
+import yaml
 
 # Function to clear the terminal screen
 def clear_terminal():
@@ -12,10 +13,9 @@ def clear_terminal():
 # Get the directory of the current script
 base_directory = os.path.dirname(__file__)
 
-# Load the configuration file to get the path of the prediction dataset
-config_file = base_directory + "/config.json"
-with open(config_file, "r") as f:
-    config = json.load(f)
+# Load configuration from YAML file
+with open(base_directory +"/config.yaml", "r") as file:
+    config = yaml.safe_load(file)
 
 # Load or create the master file for matched teams
 master_file = "matched_teams_master.csv"
@@ -46,8 +46,6 @@ def create_name_variations(name):
     variations = [name]  # Original name
     if len(words) > 1:
         variations.append(" ".join(words[:-1]))  # Drop last word
-    if len(words) > 2:
-        variations.append(" ".join(words[:-2]))  # Drop last two words
     return variations
 
 # Function to save unmatched teams
@@ -74,7 +72,7 @@ try:
 
         # Generate all variations and collect top matches
         normalized_variations = [normalize_name(var) for var in create_name_variations(original_name)]
-        gender_suffix = "_M" if team_entry.get('gender') == 'men' else "_F"
+        gender_suffix = "_M" if team_entry.get("gender") == "men" else "_F"
         
         all_matches = []
         for name_variation in normalized_variations:
@@ -101,9 +99,15 @@ try:
 
         print("0. None match - Enter a custom search string")
         choice = input("Select the correct match (1-5) or enter 0 to search manually: ").strip().lower()
+        
+        if choice.lower() == "exit":
+            print("Exiting program. Saving progress...")
+            save_unmatched_teams()
+            save_master_df()
+            exit()
 
         # Handle manual search if selected
-        if choice == '0':
+        if choice not in ["1", "2", "3", "4", "5", "exit"]:
             custom_search = input("Enter a custom search string: ").strip()
             search_matches = process.extract(custom_search, prediction_teams, limit=10, scorer=fuzz.token_sort_ratio)
             
@@ -132,7 +136,7 @@ try:
             except ValueError:
                 print("No match selected. Keeping team in unmatched.")
         
-        elif choice in ['1', '2', '3', '4', '5']:
+        elif choice in ["1", "2", "3", "4", "5"]:
             choice = int(choice)
             selected_match = unique_matches[choice - 1][0]
             selected_score = unique_matches[choice - 1][1]
