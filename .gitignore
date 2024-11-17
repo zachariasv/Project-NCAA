@@ -3,11 +3,13 @@ The Odds Api/.env
 
 # Ignore the config file in the Prediction folder
 Prediction/config.yaml
+Match Results/config.yaml
 The Odds Api/config.yaml
 
 # Ignore data files
 *.json
 *.csv
+*.parquet
 
 # Ignore Python cache files
 __pycache__/
