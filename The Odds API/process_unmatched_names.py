@@ -63,7 +63,7 @@ else:
         quit()
 
 # Load unmatched teams with suggestions, if available, or load unique teams from the source file
-unmatched_file = "unmatched_teams_with_suggestions.json"
+unmatched_file = "/unmatched_teams_with_suggestions.json"
 if os.path.exists(base_directory + unmatched_file):
     with open(base_directory + unmatched_file, "r") as f:
         unmatched_teams = json.load(f)
@@ -118,7 +118,7 @@ try:
             print(f"{i}. {match} (Score: {score})")
 
         print("0. None match - Enter a custom search string")
-        choice = input("Select the correct match (1-5) or enter 0 to search manually: ").strip().lower()
+        choice = input("Select the correct match (1-5) or enter manual search: ").strip().lower()
         
         if choice.lower() == "exit":
             print("Exiting program. Saving progress...")
@@ -128,8 +128,7 @@ try:
 
         # Handle manual search if selected
         if choice not in ["1", "2", "3", "4", "5", "exit"]:
-            custom_search = input("Enter a custom search string: ").strip()
-            search_matches = process.extract(custom_search, prediction_teams, limit=10, scorer=fuzz.token_sort_ratio)
+            search_matches = process.extract(choice, prediction_teams, limit=10, scorer=fuzz.token_sort_ratio)
             
             # Display manual search results
             print("\nCustom Search Results:")
