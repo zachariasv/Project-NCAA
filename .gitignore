@@ -24,3 +24,9 @@ __pycache__/
 
 # Ignore DS Store
 .DS_Store
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+*.nbconvert.ipynb
+*-checkpoint.ipynb
