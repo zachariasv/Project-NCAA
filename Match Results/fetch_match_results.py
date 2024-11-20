@@ -45,10 +45,10 @@ def setup_webdriver(date):
     browser.get(f"https://www.sports-reference.com/cbb/boxscores/index.cgi?month={date.month}&day={date.day}&year={date.year}") # Load last fetched date
     return browser
 
-def main():
-    df, date = initialize_data() # Load data
-    browser = setup_webdriver(date) # Set up webdriver
-
+def scrape_data(df, browser, date):
+    """
+    Scrape data from the website.
+    """
     finished_scraping = False # Set up while loop
 
     while not finished_scraping:
@@ -91,6 +91,13 @@ def main():
                 except Exception as e: # Simple error handling, often parsing of integers fails due to empty strings when elements are found but are empty on days with no matches. This is a crude but working fix.
                     pass
             print(f"Finished collecting data for {date}!")
+            
+    return df
+
+def main():
+    df, date = initialize_data() # Load data
+    browser = setup_webdriver(date) # Set up webdriver
+    df = scrape_data(df, browser, date) # Scrape data
 
     df.drop_duplicates().reset_index(drop = True).to_parquet("webscraped_ncaa_games_history.parquet") # Save data to parquet file once finished
     print(f"Saved data on {date}.")
