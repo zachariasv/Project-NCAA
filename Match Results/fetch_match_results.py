@@ -99,7 +99,8 @@ def main():
     browser = setup_webdriver(date) # Set up webdriver
     df = scrape_data(df, browser, date) # Scrape data
 
-    df.drop_duplicates().reset_index(drop = True).to_parquet("webscraped_ncaa_games_history.parquet") # Save data to parquet file once finished
+    df.drop_duplicates().reset_index(drop = True).to_parquet(WEBSCRAPE_MATCHES_FILE) # Save data to parquet file once finished
+    date = pd.to_datetime(df.date.max()).date()
     print(f"Saved data on {date}.")
 
 if __name__ == "__main__":
