@@ -7,21 +7,6 @@ import logging
 import os
 import platform
 
-# Clear the terminal screen
-os.system("cls" if platform.system() == "Windows" else "clear")
-
-# Get the directory of the current script
-BASE_DIRECTORY = os.path.dirname(__file__) + "/"
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-
-# Configuration
-WEBSCRAPED_MATCHES_FILE = BASE_DIRECTORY + "webscraped_ncaa_games_history.parquet"
-TEAM_SCORES_FILE = BASE_DIRECTORY + "team_scores.parquet"
-TEAM_TRENDS_FILE = BASE_DIRECTORY + "team_trends.parquet"
-PROCESSED_DATA_FILE = BASE_DIRECTORY + "processed_data.parquet"
-
 def calculate_goal_utility(home_goals, away_goals, alpha=0.025, norm=11):
     """
     Calculates the goal utility based on the number of goals scored by home and away teams.
@@ -161,6 +146,7 @@ def save_team_scores(historical_scores, historical_trends):
     """
     Saves the team scores and trends to Parquet files.
     """
+    logging.info("Saving team scores and trends...")
     historical_scores.to_parquet(TEAM_SCORES_FILE)
     historical_trends.to_parquet(TEAM_TRENDS_FILE)
 
@@ -168,6 +154,7 @@ def load_team_scores():
     """
     Loads the team scores and trends from Parquet files if they exist.
     """
+    logging.info("Loading team scores and trends...")
     if os.path.exists(TEAM_SCORES_FILE) and os.path.exists(TEAM_TRENDS_FILE):
         historical_scores = pd.read_parquet(TEAM_SCORES_FILE)
         historical_trends = pd.read_parquet(TEAM_TRENDS_FILE)
@@ -211,6 +198,21 @@ def assign_team_data(df, historical_scores, historical_trends):
     return df
 
 def main():
+    # Clear the terminal screen
+    os.system("cls" if platform.system() == "Windows" else "clear")
+
+    # Get the directory of the current script
+    BASE_DIRECTORY = os.path.dirname(__file__) + "/"
+
+    # Configure logging
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+
+    # Configuration
+    WEBSCRAPED_MATCHES_FILE = BASE_DIRECTORY + "webscraped_ncaa_games_history.parquet"
+    TEAM_SCORES_FILE = BASE_DIRECTORY + "team_scores.parquet"
+    TEAM_TRENDS_FILE = BASE_DIRECTORY + "team_trends.parquet"
+    PROCESSED_DATA_FILE = BASE_DIRECTORY + "processed_data.parquet"
+
     logging.info("Starting team scores calculation.")
 
     # Load and preprocess historical data

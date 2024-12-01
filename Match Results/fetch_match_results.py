@@ -7,9 +7,13 @@ import time
 from datetime import datetime, timedelta
 import platform
 import os
+import logging
 
 # Clear the terminal screen
 os.system("cls" if platform.system() == "Windows" else "clear")
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Get the directory of the current script
 BASE_DIRECTORY = os.path.dirname(__file__)
@@ -20,13 +24,13 @@ def initialize_data():
     Load existing data or initialize the data if no existing database is found.
     """
     if not os.path.exists(WEBSCRAPE_MATCHES_FILE):
-        print("No existing database found, creating new database...")
+        logging.info("No existing database found, creating new database...")
         date = pd.to_datetime("1986-1-2").date() # Initialize with first date of data if no data is available
         columns = ["date", "home_team", "home_team_ranking", "home_team_score", "away_team", "away_team_ranking", "away_team_score", "gender"]
         df = pd.DataFrame(columns=columns)
         df.to_parquet(WEBSCRAPE_MATCHES_FILE)
     else:
-        print("Fetching data from existing database...")
+        logging.info("Fetching data from existing database...")
         df = pd.read_parquet(WEBSCRAPE_MATCHES_FILE) # Load already fetched database
         date = pd.to_datetime(df.date.max()).date()
     return df, date
@@ -68,7 +72,7 @@ def scrape_data(df, browser, date):
 
         if date.day in [1, 11, 21]: # Periodically save data
             df.to_parquet("webscraped_ncaa_games_history.parquet")
-            print(f"Saved data on {date}.")
+            logging.info(f"Saved data on {date}.")
 
         if len(elements) > 0: # If there are any match results on the page
             for element in elements:
@@ -90,7 +94,7 @@ def scrape_data(df, browser, date):
 
                 except Exception as e: # Simple error handling, often parsing of integers fails due to empty strings when elements are found but are empty on days with no matches. This is a crude but working fix.
                     pass
-            print(f"Finished collecting data for {date}!")
+            logging.info(f"Finished collecting data for {date}!")
             
     return df
 
@@ -101,7 +105,7 @@ def main():
 
     df.drop_duplicates().reset_index(drop = True).to_parquet(WEBSCRAPE_MATCHES_FILE) # Save data to parquet file once finished
     date = pd.to_datetime(df.date.max()).date()
-    print(f"Saved data on {date}.")
+    logging.info(f"Saved data on {date}.")
 
 if __name__ == "__main__":
     main()
