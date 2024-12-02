@@ -27,6 +27,8 @@ __pycache__/
 # Ignore DS Store
 */.DS_Store
 .DS_Store
+Prediction/.DS_Store
+Match Results/.DS_Store
 
 # Jupyter Notebook
 .ipynb_checkpoints
