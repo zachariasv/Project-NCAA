@@ -7,6 +7,7 @@ import yaml
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 from datetime import datetime
+import platform
 
 @dataclass
 class GameStats:
@@ -200,7 +201,8 @@ class FeatureEngineering:
                 features, idx,
                 self.teams[home_team], self.teams[away_team],
                 home_team, away_team,
-                date, recent_games
+                date, recent_games,
+                home_score, away_score
             )
 
             # Update team histories
@@ -228,8 +230,9 @@ class FeatureEngineering:
         self, features: pd.DataFrame, idx: int,
         home_team_stats: TeamStats, away_team_stats: TeamStats,
         home_team_name: str, away_team_name: str,
-        date: datetime, recent_games: int
-    ) -> None:
+        date: datetime, recent_games: int,
+        home_score: int, away_score: int
+        ) -> None:
         # Get recent stats
         home_recent = home_team_stats.get_recent_stats(date, recent_games)
         away_recent = away_team_stats.get_recent_stats(date, recent_games)
@@ -254,7 +257,7 @@ class FeatureEngineering:
         away_overall_stats = away_team_stats.get_overall_stats(date)
 
         # Set features
-        features.at[idx, "home_team_won"] = (features.at[idx, "home_team_score"] > features.at[idx, "away_team_score"]).astype(int)
+        features.at[idx, "home_team_won"] = int(home_score > away_score)
         features.at[idx, f"home_win_last_{recent_games}"] = home_recent["wins"]
         features.at[idx, f"away_win_last_{recent_games}"] = away_recent["wins"]
         features.at[idx, f"home_total_points_scored_last_{recent_games}"] = home_recent["total_points_scored"]

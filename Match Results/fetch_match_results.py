@@ -78,17 +78,17 @@ def scrape_data(df, browser, date):
             for element in elements:
                 try:
                     if "hidden" not in element.get_attribute("class").split():
-                        home_team = element.find_elements(By.CSS_SELECTOR, "td")[0].text.split(" (")[0]
-                        home_team_score = int(element.find_elements(By.CSS_SELECTOR, "td")[1].text)
-                        away_team = element.find_elements(By.CSS_SELECTOR, "td")[3].text.split(" (")[0]
-                        away_team_score = int(element.find_elements(By.CSS_SELECTOR, "td")[4].text)
+                        away_team = element.find_elements(By.CSS_SELECTOR, "td")[0].text.split(" (")[0]
+                        away_team_score = int(element.find_elements(By.CSS_SELECTOR, "td")[1].text)
+                        home_team = element.find_elements(By.CSS_SELECTOR, "td")[3].text.split(" (")[0]
+                        home_team_score = int(element.find_elements(By.CSS_SELECTOR, "td")[4].text)
                         gender = element.get_attribute("class")[-1:]
                         try: 
-                            home_team_ranking = int(element.find_elements(By.CSS_SELECTOR, "td")[0].text.split(" (")[1].replace(") ", ""))
-                            away_team_ranking = int(element.find_elements(By.CSS_SELECTOR, "td")[3].text.split(" (")[1].replace(") ", ""))
+                            away_team_ranking = int(element.find_elements(By.CSS_SELECTOR, "td")[0].text.split(" (")[1].replace(") ", ""))
+                            home_team_ranking = int(element.find_elements(By.CSS_SELECTOR, "td")[3].text.split(" (")[1].replace(") ", ""))
                         except:
-                            home_team_ranking = np.nan
                             away_team_ranking = np.nan
+                            home_team_ranking = np.nan
 
                         df.loc[df.shape[0]] = [date, home_team, home_team_ranking, home_team_score, away_team, away_team_ranking, away_team_score, gender] # Insert new row into the bottom of the dataframe
 

@@ -142,7 +142,7 @@ def calculate_team_scores(df, historical_scores=None, historical_trends=None):
 
     return historical_scores, historical_trends
 
-def save_team_scores(historical_scores, historical_trends):
+def save_team_scores(historical_scores, historical_trends, TEAM_SCORES_FILE, TEAM_TRENDS_FILE):
     """
     Saves the team scores and trends to Parquet files.
     """
@@ -150,7 +150,7 @@ def save_team_scores(historical_scores, historical_trends):
     historical_scores.to_parquet(TEAM_SCORES_FILE)
     historical_trends.to_parquet(TEAM_TRENDS_FILE)
 
-def load_team_scores():
+def load_team_scores(TEAM_SCORES_FILE, TEAM_TRENDS_FILE):
     """
     Loads the team scores and trends from Parquet files if they exist.
     """
@@ -219,13 +219,13 @@ def main():
     df = load_and_preprocess_data(WEBSCRAPED_MATCHES_FILE)
 
     # Load existing team scores and trends
-    historical_scores, historical_trends = load_team_scores()
+    historical_scores, historical_trends = load_team_scores(TEAM_SCORES_FILE, TEAM_TRENDS_FILE)
 
     # Calculate team scores and trends
     historical_scores, historical_trends = calculate_team_scores(df, historical_scores=historical_scores, historical_trends=historical_trends)
 
     # Save updated team scores and trends
-    save_team_scores(historical_scores, historical_trends)
+    save_team_scores(historical_scores, historical_trends, TEAM_SCORES_FILE, TEAM_TRENDS_FILE)
 
     # Assign team scores and calculate home team advantage
     df = assign_team_data(df, historical_scores, historical_trends)
