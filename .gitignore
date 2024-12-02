@@ -24,7 +24,7 @@ __pycache__/
 *.sqlite3
 
 # Ignore DS Store
-*.DS_Store
+*/.DS_Store
 
 # Jupyter Notebook
 .ipynb_checkpoints
