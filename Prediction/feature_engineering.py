@@ -168,6 +168,17 @@ class FeatureEngineering:
             "h2h_avg_points_conceded_away_team": h2h_avg_points_conceded_away_team,
             "h2h_avg_point_diff_away_team": h2h_avg_point_diff_away_team,
         }
+    
+    def calculate_months_into_season(self, date: datetime) -> float:
+        month = date.month
+        if month >= 11:  # November or December
+            season_start = date.replace(month=11, day=1)
+        else:  # January through October
+            season_start = date.replace(year=date.year-1, month=11, day=1)
+        
+        # Calculate months as a float for more granular tracking
+        days_into_season = (date - season_start).days
+        return days_into_season / 30.44  # Average days in a month
 
     def process_dataframe(self, df: pd.DataFrame, recent_games: int = 5) -> pd.DataFrame:
         """Main processing function with vectorized operations where possible"""
@@ -295,6 +306,9 @@ class FeatureEngineering:
         features.at[idx, "away_avg_points_scored"] = away_overall_stats["avg_points_scored"]
         features.at[idx, "away_avg_points_conceded"] = away_overall_stats["avg_points_conceded"]
 
+        # Add time into season
+        features.at[idx, "months_into_season"] = self.calculate_months_into_season(date)
+
     @staticmethod
     def _get_feature_columns(recent_games: int) -> List[str]:
         """Return list of feature column names"""
@@ -328,6 +342,7 @@ class FeatureEngineering:
             "home_avg_points_conceded",
             "away_avg_points_scored",
             "away_avg_points_conceded",
+            "months_into_season"
         ]
 
 def main():
