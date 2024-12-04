@@ -1,6 +1,10 @@
 # Ignore environment variables for The Odds Api
 The Odds Api/.env
 
+# Ignore some folders
+logs/
+evaluation_results/
+
 # Ignore the config file in the Prediction folder
 Prediction/config.yaml
 Match Results/config.yaml
