@@ -6,6 +6,7 @@ logs/
 evaluation_results/
 
 # Ignore the config file in the Prediction folder
+Live Implementation/config.yaml
 Prediction/config.yaml
 Match Results/config.yaml
 The Odds Api/config.yaml
