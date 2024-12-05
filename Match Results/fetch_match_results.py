@@ -39,6 +39,7 @@ def setup_webdriver(date):
     """
     Set up the Chrome webdriver with the necessary options.
     """
+    logging.info(f"Setting up webdriver for {date}...")
     options = webdriver.ChromeOptions()
     options.add_argument("--start-maximized")
     options.add_argument("--no-sandbox")
@@ -53,8 +54,10 @@ def scrape_data(df, browser, date):
     """
     Scrape data from the website.
     """
-    finished_scraping = False # Set up while loop
+    logging.info("Begun scraping data...")
 
+    finished_scraping = False # Set up while loop
+    
     while not finished_scraping:
         date = (date + timedelta(days = 1)) # Fetch next date
 
