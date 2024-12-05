@@ -6,6 +6,7 @@ from tqdm import tqdm
 import logging
 import os
 import platform
+from time import timedelta
 
 def calculate_goal_utility(home_goals, away_goals, alpha=0.025, norm=11):
     """
@@ -83,6 +84,7 @@ def calculate_team_scores(df, historical_scores=None, historical_trends=None):
     with tqdm(total=total_matches, desc="Calculating Team Scores", unit="match") as pbar:
         for idx, match in df.iterrows():
             date = match["date"]
+            next_day = date + timedelta(days=1)
             home_team = match["home_team"]
             away_team = match["away_team"]
             home_goals = match["home_team_score"]
@@ -113,12 +115,12 @@ def calculate_team_scores(df, historical_scores=None, historical_trends=None):
 
             # Store the scores and trends for this date
             team_scores_records.extend([
-                {"date": date, "team": home_team, "score": latest_home_score},
-                {"date": date, "team": away_team, "score": latest_away_score},
+                {"date": next_day, "team": home_team, "score": latest_home_score},
+                {"date": next_day, "team": away_team, "score": latest_away_score},
             ])
             team_trends_records.extend([
-                {"date": date, "team": home_team, "trend": latest_home_trend},
-                {"date": date, "team": away_team, "trend": latest_away_trend},
+                {"date": next_day, "team": home_team, "trend": latest_home_trend},
+                {"date": next_day, "team": away_team, "trend": latest_away_trend},
             ])
 
             # Update progress bar
