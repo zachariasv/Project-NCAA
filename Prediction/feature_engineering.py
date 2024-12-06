@@ -27,6 +27,8 @@ class TeamStats:
 
     def add_game(self, game: GameStats) -> None:
         self.history.append(game)
+        cutoff_date = game.date - timedelta(days=30*18) # Keep only last 18 months of data
+        self.history = [g for g in self.history if g.date > cutoff_date]
         self._cached_stats = {}  # Invalidate cache
 
     def get_recent_stats(self, before_date: datetime, n_games: int = 5) -> Dict:
@@ -49,12 +51,12 @@ class TeamStats:
         self._cached_stats[cache_key] = stats
         return stats
 
-    def get_venue_stats(self, is_home: bool, before_date: datetime, lookback_months: int = 18) -> Tuple[float, float]:
+    def get_venue_stats(self, is_home: bool, before_date: datetime) -> Tuple[float, float]:
         cache_key = f"venue_stats_{is_home}"
         if cache_key in self._cached_stats:
             return self._cached_stats[cache_key]
 
-        venue_games = [g for g in self.history if (g.is_home == is_home and g.date < before_date and g.date > (before_date - timedelta(days=30*lookback_months)))]
+        venue_games = [g for g in self.history if (g.is_home == is_home and g.date < before_date)]
         if not venue_games:
             return 0.0, 0.0
 
@@ -83,8 +85,8 @@ class TeamStats:
                 break
         return streak
 
-    def get_overall_stats(self, before_date: datetime, lookback_months: int = 18) -> Dict:
-        games = [g for g in self.history if (g.date < before_date and g.date > (before_date - timedelta(days=30*lookback_months)))]
+    def get_overall_stats(self, before_date: datetime) -> Dict:
+        games = [g for g in self.history if (g.date < before_date )]
         if not games:
             return {"avg_points_scored": 0.0, "avg_points_conceded": 0.0}
         avg_points_scored = np.mean([g.points_scored for g in games])
@@ -424,7 +426,7 @@ def main():
             logging.info(f"Found {len(new_dates_df)} new dates to process")
             
             # Add features for new dates
-            new_features = feature_engineering.process_dataframe(new_dates_df)
+            new_features = feature_engineering.process_dataframe(df = new_dates_df, historical_df = existing_features)
             
             # Combine existing and new features
             df_with_features = pd.concat([existing_features, new_features], ignore_index=True)
