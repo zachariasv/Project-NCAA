@@ -192,7 +192,7 @@ class FeatureEngineering:
             if set(historical_df.columns) != set(df.columns):
                 logging.error("Historical data format doesn't match current data format")
                 logging.error("Consider regenerating all features by passing historical_df=None")
-                raise ValueError("Column mismatch between historical and new data")
+                raise ValueError(f"Column mismatch between historical and new data\nHistorical columns: {historical_df.columns}\nNew data columns: {df.columns}")
             
             # Initialize teams from historical data first
             for team in pd.concat([historical_df["home_team"], historical_df["away_team"]]).unique():
