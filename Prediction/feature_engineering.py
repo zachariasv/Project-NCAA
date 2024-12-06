@@ -6,7 +6,7 @@ import os
 import yaml
 from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 import platform
 
 @dataclass
@@ -49,12 +49,12 @@ class TeamStats:
         self._cached_stats[cache_key] = stats
         return stats
 
-    def get_venue_stats(self, is_home: bool) -> Tuple[float, float]:
+    def get_venue_stats(self, is_home: bool, before_date: datetime, lookback_months: int = 18) -> Tuple[float, float]:
         cache_key = f"venue_stats_{is_home}"
         if cache_key in self._cached_stats:
             return self._cached_stats[cache_key]
 
-        venue_games = [g for g in self.history if g.is_home == is_home]
+        venue_games = [g for g in self.history if (g.is_home == is_home and g.date < before_date and g.date > (before_date - timedelta(days=30*lookback_months)))]
         if not venue_games:
             return 0.0, 0.0
 
@@ -74,7 +74,7 @@ class TeamStats:
 
     def get_away_game_streak(self, current_date: datetime) -> int:
         streak = 0
-        for game in reversed(self.history):
+        for game in reversed([g for g in self.history if g.date > (current_date - timedelta(days=30*6))]): # Only look at current season
             if game.date >= current_date:
                 continue
             if not game.is_home:
@@ -83,8 +83,8 @@ class TeamStats:
                 break
         return streak
 
-    def get_overall_stats(self, before_date: datetime) -> Dict:
-        games = [g for g in self.history if g.date < before_date]
+    def get_overall_stats(self, before_date: datetime, lookback_months: int = 18) -> Dict:
+        games = [g for g in self.history if (g.date < before_date and g.date > (before_date - timedelta(days=30*lookback_months)))]
         if not games:
             return {"avg_points_scored": 0.0, "avg_points_conceded": 0.0}
         avg_points_scored = np.mean([g.points_scored for g in games])
@@ -103,7 +103,7 @@ class FeatureEngineering:
             self.head_to_head_history[key] = []
         self.head_to_head_history[key].extend([home_game, away_game])
 
-    def get_head_to_head_stats(self, home_team: str, away_team: str, before_date: datetime, n_games: int = 5) -> Dict:
+    def get_head_to_head_stats(self, home_team: str, away_team: str, before_date: datetime, n_games: int = 10) -> Dict:
         """Calculate head-to-head statistics between two teams"""
         key = tuple(sorted([home_team, away_team]))
 
@@ -111,7 +111,7 @@ class FeatureEngineering:
         h2h_games = [
             g for g in self.head_to_head_history.get(key, [])
             if g.date < before_date
-        ][-2*n_games:]  # Adjusted for both home and away perspectives
+        ][-n_games:]  # Adjusted for both home and away perspectives
 
         if not h2h_games:
             return {
@@ -180,43 +180,72 @@ class FeatureEngineering:
         days_into_season = (date - season_start).days
         return days_into_season / 30.44  # Average days in a month
 
-    def process_dataframe(self, df: pd.DataFrame, recent_games: int = 5) -> pd.DataFrame:
-        """Main processing function with vectorized operations where possible"""
-        # Initialize all teams
+    def process_dataframe(self, df: pd.DataFrame, historical_df: pd.DataFrame = None, recent_games: int = 5) -> pd.DataFrame:
+        """
+        Main processing function with vectorized operations where possible.
+        If historical_df is provided, only process new games while maintaining historical context.
+        """
+        # Verify format compatibility if historical data exists
+        if historical_df is not None:
+            if set(historical_df.columns) != set(df.columns):
+                logging.error("Historical data format doesn't match current data format")
+                logging.error("Consider regenerating all features by passing historical_df=None")
+                raise ValueError("Column mismatch between historical and new data")
+            
+            # Initialize teams from historical data first
+            for team in pd.concat([historical_df["home_team"], historical_df["away_team"]]).unique():
+                if team not in self.teams:
+                    self.teams[team] = TeamStats()
+            
+            # Process historical data to build up team states
+            chunk_size = 1000
+            for start_idx in tqdm(range(0, len(historical_df), chunk_size), desc="Processing historical data"):
+                end_idx = min(start_idx + chunk_size, len(historical_df))
+                chunk = historical_df.iloc[start_idx:end_idx]
+                self._process_chunk(chunk, pd.DataFrame(), start_idx, recent_games, update_features=False)
+
+        # Initialize any new teams from the new data
         for team in pd.concat([df["home_team"], df["away_team"]]).unique():
             if team not in self.teams:
                 self.teams[team] = TeamStats()
 
-        # Pre-allocate feature DataFrame
+        # Pre-allocate feature DataFrame for new data
         feature_cols = self._get_feature_columns(recent_games)
         features = pd.DataFrame(0.0, index=df.index, columns=feature_cols)
 
-        # Process in chunks for better memory management
+        # Process new data in chunks
         chunk_size = 1000
-        for start_idx in tqdm(range(0, len(df), chunk_size), desc="Processing chunks"):
+        for start_idx in tqdm(range(0, len(df), chunk_size), desc="Processing new data"):
             end_idx = min(start_idx + chunk_size, len(df))
             chunk = df.iloc[start_idx:end_idx]
-            self._process_chunk(chunk, features, start_idx, recent_games)
+            self._process_chunk(chunk, features, start_idx, recent_games, update_features=True)
 
         # Combine original data with features
-        return pd.concat([df, features], axis=1)
+        result = pd.concat([df, features], axis=1)
+        
+        if historical_df is not None:
+            result = pd.concat([historical_df, result]).sort_values("date")
+        
+        return result
 
-    def _process_chunk(self, chunk: pd.DataFrame, features: pd.DataFrame, start_idx: int, recent_games: int) -> None:
+    def _process_chunk(self, chunk: pd.DataFrame, features: pd.DataFrame, start_idx: int, recent_games: int, update_features: bool = True) -> None:
+        """Process a chunk of data, optionally updating features"""
         for idx, row in chunk.iterrows():
             date = row["date"]
             home_team, away_team = row["home_team"], row["away_team"]
             home_score, away_score = row["home_team_score"], row["away_team_score"]
 
-            # Calculate features
-            self._calculate_team_features(
-                features, idx,
-                self.teams[home_team], self.teams[away_team],
-                home_team, away_team,
-                date, recent_games,
-                home_score, away_score
-            )
+            if update_features:
+                # Calculate features
+                self._calculate_team_features(
+                    features, idx,
+                    self.teams[home_team], self.teams[away_team],
+                    home_team, away_team,
+                    date, recent_games,
+                    home_score, away_score
+                )
 
-            # Update team histories
+            # Update team histories (always do this)
             game_result = int(home_score > away_score)
             point_diff = home_score - away_score
 
@@ -249,8 +278,8 @@ class FeatureEngineering:
         away_recent = away_team_stats.get_recent_stats(date, recent_games)
 
         # Get venue stats
-        home_venue_rate, home_venue_points = home_team_stats.get_venue_stats(True)
-        away_venue_rate, away_venue_points = away_team_stats.get_venue_stats(False)
+        home_venue_rate, home_venue_points = home_team_stats.get_venue_stats(True, before_date=date)
+        away_venue_rate, away_venue_points = away_team_stats.get_venue_stats(False, before_date=date)
 
         # Get head-to-head stats
         h2h_stats = self.get_head_to_head_stats(home_team_name, away_team_name, date, recent_games)
@@ -268,7 +297,7 @@ class FeatureEngineering:
         away_overall_stats = away_team_stats.get_overall_stats(date)
 
         # Set features
-        features.at[idx, "home_team_won"] = int(home_score > away_score)
+        if not (np.isnan(home_score) or np.isnan(away_score)): features.at[idx, "home_team_won"] = int(home_score > away_score)
         features.at[idx, f"home_win_last_{recent_games}"] = home_recent["wins"]
         features.at[idx, f"away_win_last_{recent_games}"] = away_recent["wins"]
         features.at[idx, f"home_total_points_scored_last_{recent_games}"] = home_recent["total_points_scored"]

@@ -6,7 +6,7 @@ from tqdm import tqdm
 import logging
 import os
 import platform
-from time import timedelta
+from datetime import timedelta
 
 def calculate_goal_utility(home_goals, away_goals, alpha=0.025, norm=11):
     """
