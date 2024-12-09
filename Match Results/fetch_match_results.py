@@ -64,6 +64,10 @@ def scrape_data(df, browser, date):
         if date.month == 5 and date.day == 1: date = date.replace(month=11, day=1) # If the date is May 1st, jump to November 1st of the same year
         
         if date > datetime.now().date(): # If the date is in the future, quit the script
+            df.drop_duplicates().reset_index(drop = True).to_parquet(WEBSCRAPE_MATCHES_FILE) # Save data to parquet file once finished
+            date = pd.to_datetime(df.date.max()).date()
+            logging.info(f"Saved data on {date}.")
+
             finished_scraping = True 
             browser.quit()
             continue
@@ -74,8 +78,10 @@ def scrape_data(df, browser, date):
         elements = browser.find_elements(By.CLASS_NAME, "game_summary") # Get all match result elements
 
         if date.day in [1, 11, 21]: # Periodically save data
-            df.to_parquet("webscraped_ncaa_games_history.parquet")
+            df.drop_duplicates().reset_index(drop = True).to_parquet(WEBSCRAPE_MATCHES_FILE) # Save data to parquet file once finished
+            date = pd.to_datetime(df.date.max()).date()
             logging.info(f"Saved data on {date}.")
+
 
         if len(elements) > 0: # If there are any match results on the page
             for element in elements:
