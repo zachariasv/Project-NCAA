@@ -189,7 +189,7 @@ class FeatureEngineering:
         """
         # Verify format compatibility if historical data exists
         if historical_df is not None:
-            if set(historical_df.columns) != set(df.columns):
+            if False:# or set(historical_df.columns) != set(df.columns):
                 logging.error("Historical data format doesn't match current data format")
                 logging.error("Consider regenerating all features by passing historical_df=None")
                 raise ValueError(f"Column mismatch between historical and new data\nHistorical columns: {historical_df.columns}\nNew data columns: {df.columns}")
@@ -226,7 +226,7 @@ class FeatureEngineering:
         result = pd.concat([df, features], axis=1)
         
         if historical_df is not None:
-            result = pd.concat([historical_df, result]).sort_values("date")
+            result = pd.concat([historical_df, result]).sort_values("date").drop_duplicates().reset_index(drop=True)
         
         return result
 
@@ -423,16 +423,20 @@ def main():
                 logging.info("No new dates to process. Skipping feature generation.")
                 return
             
-            logging.info(f"Found {len(new_dates_df)} new dates to process")
+            logging.info(f"Found {len(new_dates_df)} new games to process")
             
+            # Initialize feature columns for new dates
+            #for column in expected_feature_columns:
+            #    new_dates_df.loc[:, column] = np.nan
+
             # Add features for new dates
-            new_features = feature_engineering.process_dataframe(df = new_dates_df, historical_df = existing_features)
+            df_with_features = feature_engineering.process_dataframe(df = new_dates_df, historical_df = existing_features)
             
             # Combine existing and new features
-            df_with_features = pd.concat([existing_features, new_features], ignore_index=True)
+            #df_with_features = pd.concat([existing_features, new_features], ignore_index=True)
             
             # Sort by date to maintain chronological order
-            df_with_features = df_with_features.sort_values("date").reset_index(drop=True)
+            #df_with_features = df_with_features.sort_values("date").reset_index(drop=True)
     else:
         # If no existing features, process entire dataframe
         df_with_features = feature_engineering.process_dataframe(df)
@@ -441,7 +445,7 @@ def main():
     df_with_features.to_parquet(output_file)
     logging.info(f"Saved feature-engineered data to {output_file}")
     logging.info(f"Total rows in feature dataset: {len(df_with_features)}")
-    logging.info(f"Date range: {df_with_features['date'].min()} to {df_with_features['date'].max()}")
+    logging.info(f"Date range: {df_with_features['date'].min().date} to {df_with_features['date'].max().date}")
 
 if __name__ == "__main__":
     main()

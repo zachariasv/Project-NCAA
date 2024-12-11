@@ -66,7 +66,6 @@ def scrape_data(df, browser, date):
         if date > datetime.now().date(): # If the date is in the future, quit the script
             df.drop_duplicates().reset_index(drop = True).to_parquet(WEBSCRAPE_MATCHES_FILE) # Save data to parquet file once finished
             date = pd.to_datetime(df.date.max()).date()
-            logging.info(f"Saved data on {date}.")
 
             finished_scraping = True 
             browser.quit()
@@ -76,12 +75,6 @@ def scrape_data(df, browser, date):
         time.sleep(1)
 
         elements = browser.find_elements(By.CLASS_NAME, "game_summary") # Get all match result elements
-
-        if date.day in [1, 11, 21]: # Periodically save data
-            df.drop_duplicates().reset_index(drop = True).to_parquet(WEBSCRAPE_MATCHES_FILE) # Save data to parquet file once finished
-            date = pd.to_datetime(df.date.max()).date()
-            logging.info(f"Saved data on {date}.")
-
 
         if len(elements) > 0: # If there are any match results on the page
             for element in elements:
@@ -104,6 +97,12 @@ def scrape_data(df, browser, date):
                 except Exception as e: # Simple error handling, often parsing of integers fails due to empty strings when elements are found but are empty on days with no matches. This is a crude but working fix.
                     pass
             logging.info(f"Finished collecting data for {date}!")
+        else:
+            logging.info(f"No matches found for {date}.")
+
+        if date.day in [1, 11, 21]: # Periodically save data
+            df.drop_duplicates().reset_index(drop = True).to_parquet(WEBSCRAPE_MATCHES_FILE) # Save data to parquet file once finished
+            logging.info(f"Saved data on {date}.")
             
     return df
 
@@ -114,7 +113,7 @@ def main():
 
     df.drop_duplicates().reset_index(drop = True).to_parquet(WEBSCRAPE_MATCHES_FILE) # Save data to parquet file once finished
     date = pd.to_datetime(df.date.max()).date()
-    logging.info(f"Saved data on {date}.")
+    logging.info(f"Finished scraping and saved data on {date}.")
 
 if __name__ == "__main__":
     main()

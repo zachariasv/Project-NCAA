@@ -55,7 +55,7 @@ def calculate_team_scores(df, historical_scores=None, historical_trends=None):
         # Get the last date
         last_date = historical_scores.index.max()
         # Filter df to only include matches after last_date
-        df = df[df["date"] > last_date]
+        df = df[df["date"] >= last_date]
         # If there are no new matches, quit
         if df.empty:
             logging.info("No new matches to process.")
@@ -137,6 +137,15 @@ def calculate_team_scores(df, historical_scores=None, historical_trends=None):
     # Combine with existing historical data
     historical_scores = pd.concat([historical_scores, new_team_scores_historical])
     historical_trends = pd.concat([historical_trends, new_team_trends_historical])
+
+    # Create complete date range index
+    full_date_range = pd.date_range(start=historical_scores.index.min(), end=historical_scores.index.max(), freq='D')
+    historical_scores = historical_scores.reindex(full_date_range)
+    historical_trends = historical_trends.reindex(full_date_range)
+    historical_scores.index.name = "date"
+    historical_trends.index.name = "date"
+    #historical_scores = historical_scores.reset_index().rename(columns={"index": "date"})
+    #historical_trends = historical_trends.reset_index().rename(columns={"index": "date"})
 
     # Sort index and forward-fill missing values
     historical_scores = historical_scores.sort_index().ffill()
