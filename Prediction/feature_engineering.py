@@ -445,7 +445,7 @@ def main():
     df_with_features.to_parquet(output_file)
     logging.info(f"Saved feature-engineered data to {output_file}")
     logging.info(f"Total rows in feature dataset: {len(df_with_features)}")
-    logging.info(f"Date range: {df_with_features['date'].min().date} to {df_with_features['date'].max().date}")
+    logging.info(f"Date range: {df_with_features['date'].min().date()} to {df_with_features['date'].max().date()}")
 
 if __name__ == "__main__":
     main()
