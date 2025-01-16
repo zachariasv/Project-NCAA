@@ -40,3 +40,4 @@ Match Results/.DS_Store
 */.ipynb_checkpoints/*
 *.nbconvert.ipynb
 *-checkpoint.ipynb
+*.yaml
