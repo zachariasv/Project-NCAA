@@ -86,6 +86,55 @@ class ModelEvaluator:
         }
         
         return metrics
+
+    def evaluate_by_month(self) -> pd.DataFrame:
+        """Evaluate model performance by calendar month."""
+        logging.info("Starting monthly performance evaluation...")
+
+        self.df['month_name'] = self.df['date'].dt.strftime('%Y-%m')
+        months = sorted(self.df['month_name'].unique())
+
+        results = []
+
+        for month in tqdm(months, desc="Evaluating Months", unit="month"):
+            month_data = self.df[self.df['month_name'] == month]
+
+            if len(month_data) < 30:
+                continue  # Skip small months
+
+            train_data = self.df[self.df['date'] < month_data['date'].min()]
+
+            if len(train_data) < 200:
+                continue  # Not enough data to train
+
+            X_train = train_data[self.feature_cols]
+            y_train = train_data['home_team_won']
+            X_test = month_data[self.feature_cols]
+            y_test = month_data['home_team_won']
+
+            dtrain = xgb.DMatrix(X_train, label=y_train)
+            dtest = xgb.DMatrix(X_test, label=y_test)
+
+            model = xgb.train(
+                self.best_params,
+                dtrain,
+                num_boost_round=1000,
+                early_stopping_rounds=50,
+                evals=[(dtest, 'eval')],
+                verbose_eval=False
+            )
+
+            y_pred_proba = model.predict(dtest)
+            y_pred = (y_pred_proba > 0.5).astype(int)
+
+            month_metrics = self.calculate_comprehensive_metrics(y_test, y_pred, y_pred_proba)
+            month_metrics['month'] = month
+            month_metrics['n_games'] = len(month_data)
+
+            results.append(month_metrics)
+
+        return pd.DataFrame(results)
+
     
     def evaluate_recent_split(self) -> Dict:
         """Evaluate model using most recent 10% of data as test set."""
@@ -220,26 +269,69 @@ class ModelEvaluator:
         
         return results
     
-    def plot_results(self, season_results: List[Dict]):
-        """Plot comprehensive evaluation results with enhanced visualizations."""
-        # [Previous plotting code remains unchanged as it works with the metrics dictionary]
-        # Let me know if you want me to include the full plotting code
+    def plot_results(
+    self,
+    recent_metrics: Dict,
+    season_results: List[Dict],
+    monthly_df: pd.DataFrame
+):
+        """Plot evaluation metrics for recent split, seasonal, and monthly performance."""
+        
+        # --- Convert seasonal results ---
+        df_season = pd.DataFrame(season_results)
+
+        # --- Plot Seasonal Accuracy and ROC-AUC ---
+        plt.figure(figsize=(12, 5))
+        plt.plot(df_season['season'], df_season['accuracy'], marker='o', label='Seasonal Accuracy')
+        plt.plot(df_season['season'], df_season['roc_auc'], marker='x', label='Seasonal ROC AUC')
+        plt.title('Model Performance by Season')
+        plt.xlabel('Season')
+        plt.ylabel('Score')
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+        # --- Plot Monthly Accuracy and ROC-AUC ---
+        plt.figure(figsize=(14, 6))
+        # Convert month string to datetime for proper ordering
+        monthly_df['month_date'] = pd.to_datetime(monthly_df['month'] + '-01')
+        plt.plot(monthly_df['month_date'], monthly_df['accuracy'], marker='o', label='Monthly Accuracy')
+        plt.plot(monthly_df['month_date'], monthly_df['roc_auc'], marker='x', label='Monthly ROC AUC')
+        plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m'))
+        plt.axhline(recent_metrics['accuracy'], color='green', linestyle='--', label='Recent Accuracy')
+        plt.axhline(recent_metrics['roc_auc'], color='red', linestyle='--', label='Recent ROC AUC')
+        plt.xticks(rotation=45)
+        plt.title('Model Performance by Month (with Recent Split Reference)')
+        plt.xlabel('Month')
+        plt.ylabel('Score')
+        plt.grid(True)
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+
+        # --- Optional: Print recent metrics as table ---
+        logging.info("Recent Split Metrics:")
+        for k, v in recent_metrics.items():
+            logging.info(f"{k}: {v:.4f}" if isinstance(v, float) else f"{k}: {v}")
+
+
 
 def main():
-    # Clear the terminal screen
     os.system("cls" if platform.system() == "Windows" else "clear")
 
     BASE_DIRECTORY = os.path.dirname(__file__) + "/"
     CONFIG_PATH = BASE_DIRECTORY + "config.yaml"
-    
+
     evaluator = ModelEvaluator(CONFIG_PATH)
-    
+
     recent_metrics = evaluator.evaluate_recent_split()
     season_results = evaluator.evaluate_rolling_seasons()
-    
-    evaluator.plot_results(season_results)
-    
-    logging.info("Evaluation completed. Results saved in evaluation_results directory.")
+    monthly_df = evaluator.evaluate_by_month()
+
+    evaluator.plot_results(recent_metrics, season_results, monthly_df)
+
+    logging.info("Evaluation completed.")
 
 if __name__ == "__main__":
     main()
